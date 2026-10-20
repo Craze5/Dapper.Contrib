@@ -18,9 +18,12 @@ This fork adds support for **DM (Dameng) Database 8** while preserving all origi
 ### API changes
 
 - `ISqlAdapter` interface: added `string GetParameterPrefix()` with C# 8 default implementation (`"@"`)
+- `ISqlAdapter.Insert` / `InsertAsync` return type: changed from `int` to `long` to support 64-bit identity values
 - `SqlMapperExtensions.Get<T>` / `GetAsync<T>`: cache key now includes connection type name to support per-adapter parameter prefixes
 - `SqlMapperExtensions.Insert<T>` (list): parameter prefix now uses `adapter.GetParameterPrefix()` instead of hardcoding `@`
 - `SqlMapperExtensions.GetAll<T>` / `GetAllAsync<T>`: fixed cache key to use `type.TypeHandle.Value.ToString()` (previously all types collided via `type.TypeHandle.ToString()`)
+- **Postgres `Get<T>`**: now uses `AppendColumnName` (double-quoted identifiers) in the WHERE clause instead of raw property name; fixes case mismatch when tables were created with quoted identifiers
+- **Postgres `Insert` / `InsertAsync`**: now uses `AppendColumnName` in the RETURNING clause and accesses result dictionary by property name directly (no `.ToLower()`); fixes lowercase key issue when columns are double-quoted
 
 ### Original project
 

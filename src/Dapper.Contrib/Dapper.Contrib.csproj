@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>Dapper.Contrib</AssemblyName>
     <Title>Dapper.Contrib</Title>
-    <Description>The official collection of get, insert, update and delete helpers for Dapper.net. Also handles lists of entities and optional "dirty" tracking of interface-based entities. This fork adds support for DM (Dameng) Database 8 with Oracle-style ":" parameter prefix and double-quoted identifiers.</Description>
+    <Description>The official collection of get, insert, update and delete helpers for Dapper.net. Also handles lists of entities and optional "dirty" tracking of interface-based entities. This fork adds support for DM (Dameng) Database 8 and fixes Postgres lowercase primary key issues in Get and Insert.</Description>
     <Authors>Sam Saffron;Johan Danforth;Dora Team</Authors>
     <PackageTags>orm;sql;micro-orm;dapper;dameng;dm</PackageTags>
     <!-- 建议统一为你实际的 Fork 地址 -->
@@ -17,10 +17,14 @@
 
     <PackageReleaseNotes>
       Initial release based on Dapper.Contrib 2.0.78.
+      - Added DM (Dameng) Database 8 adapter
       - Added ISqlAdapter.GetParameterPrefix() for per-database parameter prefix support
+      - Changed ISqlAdapter.Insert/InsertAsync return type from int to long
       - Fixed Get/GetAsync cache key to include connection type name
       - Fixed GetAll cache key to use type.TypeHandle.Value.ToString()
       - Fixed Insert list parameter prefix to use adapter.GetParameterPrefix()
+      - Fixed Postgres Get&lt;T&gt; to use AppendColumnName in WHERE clause (case mismatch fix)
+      - Fixed Postgres Insert/InsertAsync to use AppendColumnName in RETURNING clause (lowercase key fix)
     </PackageReleaseNotes>
     
     <TargetFrameworks>netstandard2.1</TargetFrameworks>
