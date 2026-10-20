@@ -70,6 +70,8 @@ namespace Dapper.Tests.Contrib
             return new MySqlConnection(ConnectionString);
         }
 
+        protected override string QuoteIdentifier(string identifier) => $"`{identifier}`";
+
         private static readonly bool _skip;
 
         static MySqlServerTestSuite()

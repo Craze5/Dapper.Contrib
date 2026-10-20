@@ -115,6 +115,8 @@ namespace Dapper.Tests.Contrib
             return connection;
         }
 
+        protected virtual string QuoteIdentifier(string identifier) => $"\"{identifier}\"";
+
         [Fact]
         public void TypeWithGenericParameterCanBeInserted()
         {
@@ -696,9 +698,9 @@ namespace Dapper.Tests.Contrib
 
                 var builder = new SqlBuilder();
                 var justId = builder.AddTemplate("SELECT /**select**/ FROM Users");
-                var all = builder.AddTemplate("SELECT Name, /**select**/, Age FROM Users");
+                var all = builder.AddTemplate($"SELECT {QuoteIdentifier("Name")}, /**select**/, {QuoteIdentifier("Age")} FROM Users");
 
-                builder.Select("\"Id\"");  // 双引号保持大小写
+                builder.Select(QuoteIdentifier("Id"));
 
                 var ids = connection.Query<int>(justId.RawSql, justId.Parameters);
                 var users = connection.Query<User>(all.RawSql, all.Parameters);
@@ -715,7 +717,7 @@ namespace Dapper.Tests.Contrib
         public void BuilderTemplateWithoutComposition()
         {
             var builder = new SqlBuilder();
-            var template = builder.AddTemplate("SELECT COUNT(*) FROM Users WHERE Age = @age", new { age = 5 });
+            var template = builder.AddTemplate($"SELECT COUNT(*) FROM Users WHERE {QuoteIdentifier("Age")} = @age", new { age = 5 });
 
             if (template.RawSql == null) throw new Exception("RawSql null");
             if (template.Parameters == null) throw new Exception("Parameters null");

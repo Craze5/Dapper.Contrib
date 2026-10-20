@@ -171,6 +171,11 @@ namespace Dapper.Tests.Contrib
         {
             using (var connection = GetOpenConnection())
             {
+
+                await connection.DeleteAllAsync<User>().ConfigureAwait(false);   // ← 补这里
+
+                //Console.WriteLine("================================》" + xxx.Name);
+
                 Assert.Null(await connection.GetAsync<User>(30).ConfigureAwait(false));
 
                 var originalCount = (await connection.QueryAsync<int>("select Count(*) from Users").ConfigureAwait(false)).First();
@@ -237,9 +242,9 @@ namespace Dapper.Tests.Contrib
 
                 var builder = new SqlBuilder();
                 var justId = builder.AddTemplate("SELECT /**select**/ FROM Users");
-                var all = builder.AddTemplate("SELECT Name, /**select**/, Age FROM Users");
+                var all = builder.AddTemplate($"SELECT {QuoteIdentifier("Name")}, /**select**/, {QuoteIdentifier("Age")} FROM Users");
 
-                builder.Select("Id");
+                builder.Select(QuoteIdentifier("Id"));
 
                 var ids = await connection.QueryAsync<int>(justId.RawSql, justId.Parameters).ConfigureAwait(false);
                 var users = await connection.QueryAsync<User>(all.RawSql, all.Parameters).ConfigureAwait(false);
@@ -257,7 +262,7 @@ namespace Dapper.Tests.Contrib
         public async Task BuilderTemplateWithoutCompositionAsync()
         {
             var builder = new SqlBuilder();
-            var template = builder.AddTemplate("SELECT COUNT(*) FROM Users WHERE Age = @age", new { age = 5 });
+            var template = builder.AddTemplate($"SELECT COUNT(*) FROM Users WHERE {QuoteIdentifier("Age")} = @age", new { age = 5 });
 
             if (template.RawSql == null) throw new Exception("RawSql null");
             if (template.Parameters == null) throw new Exception("Parameters null");
