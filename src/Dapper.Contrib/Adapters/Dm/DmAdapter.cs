@@ -27,7 +27,9 @@ public partial class DmAdapter : ISqlAdapter
     /// <returns>The Id of the row created.</returns>
     public long Insert(IDbConnection connection, IDbTransaction transaction, int? commandTimeout, string tableName, string columnList, string parameterList, IEnumerable<PropertyInfo> keyProperties, object entityToInsert)
     {
-        var cmd = $"insert into {tableName} ({columnList}) values ({parameterList});select SCOPE_IDENTITY() id";
+        // The column alias is double-quoted so DM returns it lower-cased,
+        // matching the dynamic property access below (dynamic is case-sensitive).
+        var cmd = $"insert into {tableName} ({columnList}) values ({parameterList});select SCOPE_IDENTITY() as \"id\"";
         var multi = connection.QueryMultiple(cmd, entityToInsert, transaction, commandTimeout);
 
         var first = multi.Read().FirstOrDefault();
@@ -62,6 +64,12 @@ public partial class DmAdapter : ISqlAdapter
     /// <param name="columnName">The column name.</param>
     public void AppendColumnNameEqualsValue(StringBuilder sb, string columnName)
     {
-        sb.AppendFormat("\"{0}\" = @{1}", columnName, columnName);
+        // DM uses Oracle style ":" parameter prefix; "@" is not supported.
+        sb.AppendFormat("\"{0}\" = :{1}", columnName, columnName);
     }
+
+    /// <summary>
+    /// DM uses Oracle style ":" parameter prefix; "@" is not supported.
+    /// </summary>
+    public string GetParameterPrefix() => ":";
 }

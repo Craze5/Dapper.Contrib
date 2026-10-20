@@ -35,4 +35,10 @@ public partial interface ISqlAdapter
     /// <param name="sb">The string builder  to append to.</param>
     /// <param name="columnName">The column name.</param>
     void AppendColumnNameEqualsValue(StringBuilder sb, string columnName);
+
+    /// <summary>
+    /// Gets the parameter prefix used by this database
+    /// (e.g. "@" for SQL Server style, ":" for Oracle/DM style).
+    /// </summary>
+    string GetParameterPrefix() => "@";
 }

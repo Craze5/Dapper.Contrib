@@ -117,6 +117,8 @@ namespace Dapper.Tests.Contrib
 
         protected virtual string QuoteIdentifier(string identifier) => $"\"{identifier}\"";
 
+        protected virtual string ParameterPrefix() => "@";
+
         [Fact]
         public void TypeWithGenericParameterCanBeInserted()
         {
@@ -717,7 +719,7 @@ namespace Dapper.Tests.Contrib
         public void BuilderTemplateWithoutComposition()
         {
             var builder = new SqlBuilder();
-            var template = builder.AddTemplate($"SELECT COUNT(*) FROM Users WHERE {QuoteIdentifier("Age")} = @age", new { age = 5 });
+            var template = builder.AddTemplate($"SELECT COUNT(*) FROM Users WHERE {QuoteIdentifier("Age")} = {ParameterPrefix()}age", new { age = 5 });
 
             if (template.RawSql == null) throw new Exception("RawSql null");
             if (template.Parameters == null) throw new Exception("Parameters null");

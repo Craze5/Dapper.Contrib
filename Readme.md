@@ -2,6 +2,32 @@ Dapper.Contrib - a simple object mapper for .Net
 ========================================
 [![Build status](https://ci.appveyor.com/api/projects/status/1w448i6nfxd14w75?svg=true)](https://ci.appveyor.com/project/StackExchange/dapper-contrib)
 
+## Changes in this fork
+
+This fork adds support for **DM (Dameng) Database 8** while preserving all original functionality.
+
+### DM (Dameng) Adapter
+
+- **Package**: `DM.DmProvider` 8.3.1.47463 (net7.0)
+- **Connection class**: `DmConnection` (namespace `Dm`)
+- **Parameter prefix**: `:` (Oracle-style, not `@`)
+- **Identifier quoting**: Double-quoted identifiers (`"column"`)
+- **Identity columns**: Compatible with SQL Server `IDENTITY(1,1)` and `SCOPE_IDENTITY()`
+- **Test suite**: `DmTestSuite` in `Dapper.Tests.Contrib` (auto-skips if no DM server available)
+
+### API changes
+
+- `ISqlAdapter` interface: added `string GetParameterPrefix()` with C# 8 default implementation (`"@"`)
+- `SqlMapperExtensions.Get<T>` / `GetAsync<T>`: cache key now includes connection type name to support per-adapter parameter prefixes
+- `SqlMapperExtensions.Insert<T>` (list): parameter prefix now uses `adapter.GetParameterPrefix()` instead of hardcoding `@`
+- `SqlMapperExtensions.GetAll<T>` / `GetAllAsync<T>`: fixed cache key to use `type.TypeHandle.Value.ToString()` (previously all types collided via `type.TypeHandle.ToString()`)
+
+### Original project
+
+All original features, attributes, and documentation below are preserved and remain unchanged from the upstream [DapperLib/Dapper.Contrib](https://github.com/DapperLib/Dapper.Contrib/) repository.
+
+---
+
 Release Notes
 -------------
 Located at [contrib.dapperlib.dev](https://contrib.dapperlib.dev/)

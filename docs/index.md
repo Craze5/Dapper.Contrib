@@ -1,5 +1,7 @@
 # Dapper.Contrib - Extensions for Dapper
 
+> **Fork note**: This fork adds support for **DM (Dameng) Database 8** (see README.md for details). All original content below is preserved from the upstream repository.
+
 ## Overview
 
 A brief guide is available [on github](https://github.com/DapperLib/Dapper.Contrib/blob/main/Readme.md)

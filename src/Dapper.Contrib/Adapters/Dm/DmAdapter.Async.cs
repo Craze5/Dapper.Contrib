@@ -22,7 +22,9 @@ public partial class DmAdapter
     /// <returns>The Id of the row created.</returns>
     public async Task<long> InsertAsync(IDbConnection connection, IDbTransaction transaction, int? commandTimeout, string tableName, string columnList, string parameterList, IEnumerable<PropertyInfo> keyProperties, object entityToInsert)
     {
-        var cmd = $"insert into {tableName} ({columnList}) values ({parameterList});select SCOPE_IDENTITY() id";
+        // The column alias is double-quoted so DM returns it lower-cased,
+        // matching the dynamic property access below (dynamic is case-sensitive).
+        var cmd = $"insert into {tableName} ({columnList}) values ({parameterList});select SCOPE_IDENTITY() as \"id\"";
         var multi = await connection.QueryMultipleAsync(cmd, entityToInsert, transaction, commandTimeout).ConfigureAwait(false);
 
         var first = await multi.ReadFirstOrDefaultAsync().ConfigureAwait(false);

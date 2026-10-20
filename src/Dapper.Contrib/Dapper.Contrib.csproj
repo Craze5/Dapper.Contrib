@@ -2,26 +2,34 @@
   <PropertyGroup>
     <AssemblyName>Dapper.Contrib</AssemblyName>
     <Title>Dapper.Contrib</Title>
-    <PackageTags>orm;sql;micro-orm;dapper</PackageTags>
-    <Description>The official collection of get, insert, update and delete helpers for Dapper.net. Also handles lists of entities and optional "dirty" tracking of interface-based entities.</Description>
-    <Authors>Sam Saffron;Johan Danforth</Authors>
-    <!-- 只保留 netstandard2.1 作为目标框架 -->
+    <Description>The official collection of get, insert, update and delete helpers for Dapper.net. Also handles lists of entities and optional "dirty" tracking of interface-based entities. This fork adds support for DM (Dameng) Database 8 with Oracle-style ":" parameter prefix and double-quoted identifiers.</Description>
+    <Authors>Sam Saffron;Johan Danforth;Dora Team</Authors>
+    <PackageTags>orm;sql;micro-orm;dapper;dameng;dm</PackageTags>
+    <!-- 建议统一为你实际的 Fork 地址 -->
+    <PackageProjectUrl>https://github.com/Craze5/Dapper.Contrib</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Craze5/Dapper.Contrib.git</RepositoryUrl>
+
+    <!-- 全局已声明，这里可省略，除非想项目级覆盖 -->
+    <!-- <PackageIcon>icon.jpg</PackageIcon> -->
+    <!-- <PackageReadmeFile>README.md</PackageReadmeFile> -->
+
+
+
+    <PackageReleaseNotes>
+      Initial release based on Dapper.Contrib 2.0.78.
+      - Added ISqlAdapter.GetParameterPrefix() for per-database parameter prefix support
+      - Fixed Get/GetAsync cache key to include connection type name
+      - Fixed GetAll cache key to use type.TypeHandle.Value.ToString()
+      - Fixed Insert list parameter prefix to use adapter.GetParameterPrefix()
+    </PackageReleaseNotes>
+    
     <TargetFrameworks>netstandard2.1</TargetFrameworks>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);CA1050</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.78" />
+    <PackageReference Include="Dapper" Version="2.1.89" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
   </ItemGroup>
-  <!-- 
-    原 netstandard2.0 的条件项已删除，原因：
-    - netstandard2.1 内置了 System.Reflection.Emit 和 Microsoft.CSharp 的支持
-    - 无需再显式引用这些包
-  -->
-  <!-- 
-    原 net461 的条件项已删除，原因：
-    - 目标框架列表中已移除 net461
-    - 不需要再处理此平台的引用
-  -->
 </Project>

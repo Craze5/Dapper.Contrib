@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Dm;
+using Microsoft.Data.Sqlite;
 using MySqlConnector;
 using Npgsql;
 using System;
@@ -198,6 +199,90 @@ namespace Dapper.Tests.Contrib
                 connection.Execute("CREATE TABLE ObjectZ (Id integer not null, Name nvarchar(100) not null) ");
                 connection.Execute("CREATE TABLE GenericType (Id nvarchar(100) not null, Name nvarchar(100) not null) ");
                 connection.Execute("CREATE TABLE NullableDates (Id integer primary key autoincrement not null, DateValue DateTime) ");
+            }
+        }
+    }
+
+    public class DmTestSuite : TestSuite
+    {
+        public static string ConnectionString { get; } =
+            GetConnectionString("DmConnectionString", "Server=127.0.0.1;Port=5236;User Id=DORA_ORCH;PWD=Db@2026#123!;Schema=DORA_ORCH");
+
+        public override IDbConnection GetConnection()
+        {
+            if (_skip) Skip.Inconclusive("Skipping DM (Dameng) Tests - no server.");
+            return new DmConnection(ConnectionString);
+        }
+
+        protected override string ParameterPrefix() => ":";
+
+        private static readonly bool _skip;
+
+        static DmTestSuite()
+        {
+            try
+            {
+                using (var connection = new DmConnection(ConnectionString))
+                {
+                    connection.Open();
+
+                    // DM does not support "DROP TABLE IF EXISTS" by default, so check USER_TABLES first.
+                    // Table names are left unquoted (DM stores them upper-cased, matching unquoted DML),
+                    // while column names are double-quoted to match DmAdapter's identifier quoting.
+                    void dropTable(string name)
+                    {
+                        using (var cmd = connection.CreateCommand())
+                        {
+                            cmd.CommandText = $"select count(*) from USER_TABLES where TABLE_NAME = '{name.ToUpper()}'";
+                            if (Convert.ToInt32(cmd.ExecuteScalar()) > 0)
+                            {
+                                cmd.CommandText = $"DROP TABLE {name}";
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
+
+                    void execute(string sql)
+                    {
+                        using (var cmd = connection.CreateCommand())
+                        {
+                            cmd.CommandText = sql;
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    dropTable("Stuff");
+                    execute("CREATE TABLE Stuff (\"TheId\" int IDENTITY(1,1) not null, \"Name\" varchar(100) not null, \"Created\" timestamp null)");
+                    dropTable("People");
+                    execute("CREATE TABLE People (\"Id\" int IDENTITY(1,1) not null, \"Name\" varchar(100) not null)");
+                    dropTable("Users");
+                    execute("CREATE TABLE Users (\"Id\" int IDENTITY(1,1) not null, \"Name\" varchar(100) not null, \"Age\" int not null)");
+                    dropTable("Automobiles");
+                    execute("CREATE TABLE Automobiles (\"Id\" int IDENTITY(1,1) not null, \"Name\" varchar(100) not null)");
+                    dropTable("Results");
+                    execute("CREATE TABLE Results (\"Id\" int IDENTITY(1,1) not null, \"Name\" varchar(100) not null, \"Order\" int not null)");
+                    dropTable("ObjectX");
+                    execute("CREATE TABLE ObjectX (\"ObjectXId\" varchar(100) not null, \"Name\" varchar(100) not null)");
+                    dropTable("ObjectY");
+                    execute("CREATE TABLE ObjectY (\"ObjectYId\" int not null, \"Name\" varchar(100) not null)");
+                    dropTable("ObjectZ");
+                    execute("CREATE TABLE ObjectZ (\"Id\" int not null, \"Name\" varchar(100) not null)");
+                    dropTable("GenericType");
+                    execute("CREATE TABLE GenericType (\"Id\" varchar(100) not null, \"Name\" varchar(100) not null)");
+                    dropTable("NullableDates");
+                    execute("CREATE TABLE NullableDates (\"Id\" int IDENTITY(1,1) not null, \"DateValue\" timestamp null)");
+                }
+            }
+            catch (DmException e)
+            {
+                if (e.Message.Contains("connect", StringComparison.OrdinalIgnoreCase) || e.Message.Contains("网络"))
+                    _skip = true;
+                else
+                    throw;
+            }
+            catch (System.Net.Sockets.SocketException)
+            {
+                _skip = true;
             }
         }
     }

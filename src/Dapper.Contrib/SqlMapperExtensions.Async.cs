@@ -25,22 +25,24 @@ namespace Dapper.Contrib.Extensions
         public static async Task<T> GetAsync<T>(this IDbConnection connection, dynamic id, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
             var type = typeof(T);
-            if (!GetQueries.TryGetValue(type.TypeHandle, out string sql))
+            var cacheKey = $"{type.TypeHandle.Value.ToString()}|{connection.GetType().Name}";
+            if (!GetQueries.TryGetValue(cacheKey, out string sql))
             {
                 var key = GetSingleKey<T>(nameof(GetAsync));
                 var name = GetTableName(type);
 
                 var sb = new StringBuilder();
                 sb.Append("SELECT * FROM ").Append(name).Append(" WHERE ");
-                GetFormatter(connection).AppendColumnName(sb, key.Name);
-                sb.Append(" = @id");
+                var adapter = GetFormatter(connection);
+                adapter.AppendColumnName(sb, key.Name);
+                sb.Append(" = ").Append(adapter.GetParameterPrefix()).Append("id");
 
                 sql = sb.ToString();
-                GetQueries[type.TypeHandle] = sql;
+                GetQueries[cacheKey] = sql;
             }
 
             var dynParams = new DynamicParameters();
-            dynParams.Add("@id", id);
+            dynParams.Add("id", id);
 
             if (!type.IsInterface)
                 return (await connection.QueryAsync<T>(sql, dynParams, transaction, commandTimeout).ConfigureAwait(false)).FirstOrDefault();
@@ -86,15 +88,15 @@ namespace Dapper.Contrib.Extensions
         public static Task<IEnumerable<T>> GetAllAsync<T>(this IDbConnection connection, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
             var type = typeof(T);
-            var cacheType = typeof(List<T>);
+            var cacheKey = type.TypeHandle.Value.ToString();
 
-            if (!GetQueries.TryGetValue(cacheType.TypeHandle, out string sql))
+            if (!GetQueries.TryGetValue(cacheKey, out string sql))
             {
-                GetSingleKey<T>(nameof(GetAll));
+                GetSingleKey<T>(nameof(GetAllAsync));
                 var name = GetTableName(type);
 
                 sql = "SELECT * FROM " + name;
-                GetQueries[cacheType.TypeHandle] = sql;
+                GetQueries[cacheKey] = sql;
             }
 
             if (!type.IsInterface)
@@ -186,7 +188,7 @@ namespace Dapper.Contrib.Extensions
             for (var i = 0; i < allPropertiesExceptKeyAndComputed.Count; i++)
             {
                 var property = allPropertiesExceptKeyAndComputed[i];
-                sbParameterList.AppendFormat("@{0}", property.Name);
+                sbParameterList.AppendFormat("{0}{1}", sqlAdapter.GetParameterPrefix(), property.Name);
                 if (i < allPropertiesExceptKeyAndComputed.Count - 1)
                     sbParameterList.Append(", ");
             }

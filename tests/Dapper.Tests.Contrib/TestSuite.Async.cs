@@ -262,7 +262,7 @@ namespace Dapper.Tests.Contrib
         public async Task BuilderTemplateWithoutCompositionAsync()
         {
             var builder = new SqlBuilder();
-            var template = builder.AddTemplate($"SELECT COUNT(*) FROM Users WHERE {QuoteIdentifier("Age")} = @age", new { age = 5 });
+            var template = builder.AddTemplate($"SELECT COUNT(*) FROM Users WHERE {QuoteIdentifier("Age")} = {ParameterPrefix()}age", new { age = 5 });
 
             if (template.RawSql == null) throw new Exception("RawSql null");
             if (template.Parameters == null) throw new Exception("Parameters null");

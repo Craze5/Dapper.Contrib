@@ -56,7 +56,9 @@ namespace Dapper.Contrib.Extensions
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>> ExplicitKeyProperties = new ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>>();
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>> TypeProperties = new ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>>();
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>> ComputedProperties = new ConcurrentDictionary<RuntimeTypeHandle, IEnumerable<PropertyInfo>>();
-        private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> GetQueries = new ConcurrentDictionary<RuntimeTypeHandle, string>();
+        // The cache key includes the connection type name because the generated SQL
+        // depends on the adapter (e.g. the parameter prefix differs per database).
+        private static readonly ConcurrentDictionary<string, string> GetQueries = new ConcurrentDictionary<string, string>();
         private static readonly ConcurrentDictionary<RuntimeTypeHandle, string> TypeTableName = new ConcurrentDictionary<RuntimeTypeHandle, string>();
 
         private static readonly ISqlAdapter DefaultAdapter = new SqlServerAdapter();
@@ -172,22 +174,24 @@ namespace Dapper.Contrib.Extensions
         {
             var type = typeof(T);
 
-            if (!GetQueries.TryGetValue(type.TypeHandle, out string sql))
+            var cacheKey = $"{type.TypeHandle.Value.ToString()}|{connection.GetType().Name}";
+            if (!GetQueries.TryGetValue(cacheKey, out string sql))
             {
                 var key = GetSingleKey<T>(nameof(Get));
                 var name = GetTableName(type);
 
                 var sb = new StringBuilder();
                 sb.Append("select * from ").Append(name).Append(" where ");
-                GetFormatter(connection).AppendColumnName(sb, key.Name);
-                sb.Append(" = @id");
+                var adapter = GetFormatter(connection);
+                adapter.AppendColumnName(sb, key.Name);
+                sb.Append(" = ").Append(adapter.GetParameterPrefix()).Append("id");
 
                 sql = sb.ToString();
-                GetQueries[type.TypeHandle] = sql;
+                GetQueries[cacheKey] = sql;
             }
 
             var dynParams = new DynamicParameters();
-            dynParams.Add("@id", id);
+            dynParams.Add("id", id);
 
             T obj;
 
@@ -238,15 +242,15 @@ namespace Dapper.Contrib.Extensions
         public static IEnumerable<T> GetAll<T>(this IDbConnection connection, IDbTransaction transaction = null, int? commandTimeout = null) where T : class
         {
             var type = typeof(T);
-            var cacheType = typeof(List<T>);
+            var cacheKey = type.TypeHandle.Value.ToString();
 
-            if (!GetQueries.TryGetValue(cacheType.TypeHandle, out string sql))
+            if (!GetQueries.TryGetValue(cacheKey, out string sql))
             {
                 GetSingleKey<T>(nameof(GetAll));
                 var name = GetTableName(type);
 
                 sql = "select * from " + name;
-                GetQueries[cacheType.TypeHandle] = sql;
+                GetQueries[cacheKey] = sql;
             }
 
             if (!type.IsInterface) return connection.Query<T>(sql, null, transaction, commandTimeout: commandTimeout);
@@ -369,7 +373,7 @@ namespace Dapper.Contrib.Extensions
             for (var i = 0; i < allPropertiesExceptKeyAndComputed.Count; i++)
             {
                 var property = allPropertiesExceptKeyAndComputed[i];
-                sbParameterList.AppendFormat("@{0}", property.Name);
+                sbParameterList.AppendFormat("{0}{1}", adapter.GetParameterPrefix(), property.Name);
                 if (i < allPropertiesExceptKeyAndComputed.Count - 1)
                     sbParameterList.Append(", ");
             }
