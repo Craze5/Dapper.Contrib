@@ -20,7 +20,7 @@ public partial class FbAdapter
     /// <param name="keyProperties">The key columns in this table.</param>
     /// <param name="entityToInsert">The entity to insert.</param>
     /// <returns>The Id of the row created.</returns>
-    public async Task<int> InsertAsync(IDbConnection connection, IDbTransaction transaction, int? commandTimeout, string tableName, string columnList, string parameterList, IEnumerable<PropertyInfo> keyProperties, object entityToInsert)
+    public async Task<long> InsertAsync(IDbConnection connection, IDbTransaction transaction, int? commandTimeout, string tableName, string columnList, string parameterList, IEnumerable<PropertyInfo> keyProperties, object entityToInsert)
     {
         var cmd = $"insert into {tableName} ({columnList}) values ({parameterList})";
         await connection.ExecuteAsync(cmd, entityToInsert, transaction, commandTimeout).ConfigureAwait(false);
@@ -31,11 +31,11 @@ public partial class FbAdapter
 
         var id = r.First().ID;
         if (id == null) return 0;
-        if (propertyInfos.Length == 0) return Convert.ToInt32(id);
+        if (propertyInfos.Length == 0) return Convert.ToInt64(id);
 
         var idp = propertyInfos[0];
         idp.SetValue(entityToInsert, Convert.ChangeType(id, idp.PropertyType), null);
 
-        return Convert.ToInt32(id);
+        return Convert.ToInt64(id);
     }
 }

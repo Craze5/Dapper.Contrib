@@ -20,7 +20,7 @@ public partial class MySqlAdapter
     /// <param name="keyProperties">The key columns in this table.</param>
     /// <param name="entityToInsert">The entity to insert.</param>
     /// <returns>The Id of the row created.</returns>
-    public async Task<int> InsertAsync(IDbConnection connection, IDbTransaction transaction, int? commandTimeout, string tableName,
+    public async Task<long> InsertAsync(IDbConnection connection, IDbTransaction transaction, int? commandTimeout, string tableName,
         string columnList, string parameterList, IEnumerable<PropertyInfo> keyProperties, object entityToInsert)
     {
         var cmd = $"INSERT INTO {tableName} ({columnList}) VALUES ({parameterList})";
@@ -30,11 +30,11 @@ public partial class MySqlAdapter
         var id = r.First().id;
         if (id == null) return 0;
         var pi = keyProperties as PropertyInfo[] ?? keyProperties.ToArray();
-        if (pi.Length == 0) return Convert.ToInt32(id);
+        if (pi.Length == 0) return Convert.ToInt64(id);
 
         var idp = pi[0];
         idp.SetValue(entityToInsert, Convert.ChangeType(id, idp.PropertyType), null);
 
-        return Convert.ToInt32(id);
+        return Convert.ToInt64(id);
     }
 }

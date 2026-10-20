@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using MySqlConnector;
+using Npgsql;
 using System;
 using System.Data;
 using System.Data.SqlClient;
@@ -23,7 +24,7 @@ namespace Dapper.Tests.Contrib
     {
         private const string DbName = "tempdb";
         public static string ConnectionString =>
-            GetConnectionString("SqlServerConnectionString", $"Data Source=.;Initial Catalog={DbName};Integrated Security=True");
+            GetConnectionString("SqlServerConnectionString", $"Data Source=127.0.0.1;Initial Catalog={DbName};User ID=sa;Password=Db@2026#123!;");
 
         public override IDbConnection GetConnection() => new SqlConnection(ConnectionString);
 
@@ -61,7 +62,7 @@ namespace Dapper.Tests.Contrib
     public class MySqlServerTestSuite : TestSuite
     {
         public static string ConnectionString { get; } =
-            GetConnectionString("MySqlConnectionString", "Server=localhost;Database=tests;Uid=test;Pwd=pass;UseAffectedRows=false;");
+            GetConnectionString("MySqlConnectionString", $"Server=127.0.0.1;Database=tests;Uid=root;Pwd=Db@2026#123!;UseAffectedRows=false;");
 
         public override IDbConnection GetConnection()
         {
@@ -108,6 +109,64 @@ namespace Dapper.Tests.Contrib
                     _skip = true;
                 else
                     throw;
+            }
+        }
+    }
+
+    public class PostgresTestSuite : TestSuite
+    {
+        public static string ConnectionString { get; } =
+            GetConnectionString("PostgresConnectionString", $"Host=127.0.0.1;Database=tests;Username=postgres;Password=Db@2026#123!;");
+
+        public override IDbConnection GetConnection()
+        {
+            if (_skip) Skip.Inconclusive("Skipping PostgreSQL Tests - no server.");
+            return new NpgsqlConnection(ConnectionString);
+        }
+
+        private static readonly bool _skip;
+
+        static PostgresTestSuite()
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(ConnectionString))
+                {
+                    // ReSharper disable once AccessToDisposedClosure
+                    void dropTable(string name) => connection.Execute($"DROP TABLE IF EXISTS {name};");
+                    connection.Open();
+                    dropTable("Stuff");
+                    connection.Execute("CREATE TABLE Stuff (\"TheId\" serial NOT NULL PRIMARY KEY, \"Name\" varchar(100) NOT NULL, \"Created\" timestamp NULL);");
+                    dropTable("People");
+                    connection.Execute("CREATE TABLE People (\"Id\" serial NOT NULL PRIMARY KEY, \"Name\" varchar(100) NOT NULL);");
+                    dropTable("Users");
+                    connection.Execute("CREATE TABLE Users (\"Id\" serial NOT NULL PRIMARY KEY, \"Name\" varchar(100) NOT NULL, \"Age\" int NOT NULL);");
+                    dropTable("Automobiles");
+                    connection.Execute("CREATE TABLE Automobiles (\"Id\" serial NOT NULL PRIMARY KEY, \"Name\" varchar(100) NOT NULL);");
+                    dropTable("Results");
+                    connection.Execute("CREATE TABLE Results (\"Id\" serial NOT NULL PRIMARY KEY, \"Name\" varchar(100) NOT NULL, \"Order\" int NOT NULL);");
+                    dropTable("ObjectX");
+                    connection.Execute("CREATE TABLE ObjectX (\"ObjectXId\" varchar(100) NOT NULL, \"Name\" varchar(100) NOT NULL);");
+                    dropTable("ObjectY");
+                    connection.Execute("CREATE TABLE ObjectY (\"ObjectYId\" int NOT NULL, \"Name\" varchar(100) NOT NULL);");
+                    dropTable("ObjectZ");
+                    connection.Execute("CREATE TABLE ObjectZ (\"Id\" int NOT NULL, \"Name\" varchar(100) NOT NULL);");
+                    dropTable("GenericType");
+                    connection.Execute("CREATE TABLE GenericType (\"Id\" varchar(100) NOT NULL, \"Name\" varchar(100) NOT NULL);");
+                    dropTable("NullableDates");
+                    connection.Execute("CREATE TABLE NullableDates (\"Id\" serial NOT NULL PRIMARY KEY, \"DateValue\" timestamp NULL);");
+                }
+            }
+            catch (NpgsqlException e)
+            {
+                if (e.Message.Contains("connect", StringComparison.OrdinalIgnoreCase))
+                    _skip = true;
+                else
+                    throw;
+            }
+            catch (System.Net.Sockets.SocketException)
+            {
+                _skip = true;
             }
         }
     }

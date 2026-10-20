@@ -176,7 +176,12 @@ namespace Dapper.Contrib.Extensions
                 var key = GetSingleKey<T>(nameof(Get));
                 var name = GetTableName(type);
 
-                sql = $"select * from {name} where {key.Name} = @id";
+                var sb = new StringBuilder();
+                sb.Append("select * from ").Append(name).Append(" where ");
+                GetFormatter(connection).AppendColumnName(sb, key.Name);
+                sb.Append(" = @id");
+
+                sql = sb.ToString();
                 GetQueries[type.TypeHandle] = sql;
             }
 
@@ -368,7 +373,7 @@ namespace Dapper.Contrib.Extensions
                     sbParameterList.Append(", ");
             }
 
-            int returnVal;
+            long returnVal;
             var wasClosed = connection.State == ConnectionState.Closed;
             if (wasClosed) connection.Open();
 

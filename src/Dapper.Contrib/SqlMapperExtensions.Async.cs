@@ -30,7 +30,12 @@ namespace Dapper.Contrib.Extensions
                 var key = GetSingleKey<T>(nameof(GetAsync));
                 var name = GetTableName(type);
 
-                sql = $"SELECT * FROM {name} WHERE {key.Name} = @id";
+                var sb = new StringBuilder();
+                sb.Append("SELECT * FROM ").Append(name).Append(" WHERE ");
+                GetFormatter(connection).AppendColumnName(sb, key.Name);
+                sb.Append(" = @id");
+
+                sql = sb.ToString();
                 GetQueries[type.TypeHandle] = sql;
             }
 
@@ -136,7 +141,7 @@ namespace Dapper.Contrib.Extensions
         /// <param name="commandTimeout">Number of seconds before command execution timeout</param>
         /// <param name="sqlAdapter">The specific ISqlAdapter to use, auto-detected based on connection if null</param>
         /// <returns>Identity of inserted entity</returns>
-        public static Task<int> InsertAsync<T>(this IDbConnection connection, T entityToInsert, IDbTransaction transaction = null,
+        public static async Task<long> InsertAsync<T>(this IDbConnection connection, T entityToInsert, IDbTransaction transaction = null,
             int? commandTimeout = null, ISqlAdapter sqlAdapter = null) where T : class
         {
             var type = typeof(T);
@@ -188,13 +193,13 @@ namespace Dapper.Contrib.Extensions
 
             if (!isList)    //single entity
             {
-                return sqlAdapter.InsertAsync(connection, transaction, commandTimeout, name, sbColumnList.ToString(),
-                    sbParameterList.ToString(), keyProperties, entityToInsert);
+                return await sqlAdapter.InsertAsync(connection, transaction, commandTimeout, name, sbColumnList.ToString(),
+                    sbParameterList.ToString(), keyProperties, entityToInsert).ConfigureAwait(false);
             }
 
             //insert list of entities
             var cmd = $"INSERT INTO {name} ({sbColumnList}) values ({sbParameterList})";
-            return connection.ExecuteAsync(cmd, entityToInsert, transaction, commandTimeout);
+            return await connection.ExecuteAsync(cmd, entityToInsert, transaction, commandTimeout).ConfigureAwait(false);
         }
 
         /// <summary>
