@@ -5,18 +5,22 @@
     <PackageTags>orm;sql;micro-orm;dapper</PackageTags>
     <Description>The official collection of get, insert, update and delete helpers for Dapper.net. Also handles lists of entities and optional "dirty" tracking of interface-based entities.</Description>
     <Authors>Sam Saffron;Johan Danforth</Authors>
-    <TargetFrameworks>net461;netstandard2.0;net5.0</TargetFrameworks>
+    <!-- 只保留 netstandard2.1 作为目标框架 -->
+    <TargetFrameworks>netstandard2.1</TargetFrameworks>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);CA1050</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.0.78" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
+  <!-- 
+    原 netstandard2.0 的条件项已删除，原因：
+    - netstandard2.1 内置了 System.Reflection.Emit 和 Microsoft.CSharp 的支持
+    - 无需再显式引用这些包
+  -->
+  <!-- 
+    原 net461 的条件项已删除，原因：
+    - 目标框架列表中已移除 net461
+    - 不需要再处理此平台的引用
+  -->
 </Project>
